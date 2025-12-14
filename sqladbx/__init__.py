@@ -49,7 +49,7 @@ Multiple databases:
     >>> app.add_middleware(ReplicaMiddleware, db_url="postgresql+asyncpg://replica", db_proxy=replica_db)
 """
 
-from .exceptions import MissingSessionError, SessionNotInitialisedError
+from .exceptions import MissingSessionError, SessionNotInitializedError
 from .middleware import SQLAlchemyMiddleware, create_db_middleware
 from .proxy import DBProxy, db
 
@@ -117,7 +117,7 @@ def create_middleware_and_db() -> tuple[type[SQLAlchemyMiddleware], DBProxy]:
 __all__ = [
     "MissingSessionError",
     "SQLAlchemyMiddleware",
-    "SessionNotInitialisedError",
+    "SessionNotInitializedError",
     "create_db",
     "create_db_middleware",
     "create_middleware_and_db",

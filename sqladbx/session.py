@@ -10,7 +10,7 @@ from .context import (
     session_args_override,
     tracked_sessions,
 )
-from .exceptions import MissingSessionError, SessionNotInitialisedError
+from .exceptions import MissingSessionError, SessionNotInitializedError
 
 
 class DBSessionManager:
@@ -33,11 +33,11 @@ class DBSessionManager:
         """Ensure session factory is initialized.
 
         Raises:
-            SessionNotInitialisedError: If session_factory is not an async_sessionmaker.
+            SessionNotInitializedError: If session_factory is not an async_sessionmaker.
 
         """
         if not isinstance(self.session_factory, async_sessionmaker):
-            raise SessionNotInitialisedError
+            raise SessionNotInitializedError
 
     def get_session(self) -> AsyncSession:
         """Return the session depending on mode.
@@ -46,7 +46,7 @@ class DBSessionManager:
             AsyncSession instance.
 
         Raises:
-            SessionNotInitialisedError: If not initialized.
+            SessionNotInitializedError: If not initialized.
             MissingSessionError: If no session in single-session mode.
 
         """

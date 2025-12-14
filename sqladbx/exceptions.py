@@ -17,13 +17,13 @@ class MissingSessionError(Exception):
         super().__init__(msg)
 
 
-class SessionNotInitialisedError(Exception):
-    """Exception raised when the user creates a new DB session without first initialising it."""
+class SessionNotInitializedError(Exception):
+    """Exception raised when the user creates a new DB session without first initializing it."""
 
     def __init__(self) -> None:
-        """Initialize SessionNotInitialisedError."""
+        """Initialize SessionNotInitializedError."""
         msg = """
-        Session not initialised! Ensure that SQLAlchemyMiddleware has been initialised before
+        Session not initialized! Ensure that SQLAlchemyMiddleware has been initialized before
         attempting database access.
         """
         super().__init__(msg)

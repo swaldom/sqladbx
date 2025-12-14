@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from .context import commit_flag, multi_sessions_flag, session_args_override, tracked_sessions
-from .exceptions import SessionNotInitialisedError
+from .exceptions import SessionNotInitializedError
 from .session import DBSessionManager
 
 
@@ -301,11 +301,11 @@ class DBProxy:
             Current AsyncSession instance.
 
         Raises:
-            SessionNotInitialisedError: If manager is not initialized.
+            SessionNotInitializedError: If manager is not initialized.
 
         """
         if not self.manager:
-            raise SessionNotInitialisedError
+            raise SessionNotInitializedError
         return self.manager.get_session()
 
     def __call__(
@@ -328,7 +328,7 @@ class DBProxy:
             Async context manager for database session.
 
         Raises:
-            SessionNotInitialisedError: If manager is not initialized.
+            SessionNotInitializedError: If manager is not initialized.
 
         Note:
             In multi-session mode, session_args applies to ALL sessions created
@@ -347,7 +347,7 @@ class DBProxy:
 
         """
         if not self.manager:
-            raise SessionNotInitialisedError
+            raise SessionNotInitializedError
 
         # Set session_args in ContextVar for both modes
         if multi_sessions:
