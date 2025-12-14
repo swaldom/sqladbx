@@ -12,7 +12,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from sqladbx.context import commit_flag, multi_sessions_flag, session_args_override, tracked_sessions
+from sqladbx.context import commit_flag, current_session, multi_sessions_flag, session_args_override, tracked_sessions
 from sqladbx.exceptions import MissingSessionError, SessionNotInitializedError
 from sqladbx.session import DBSessionManager
 
@@ -53,7 +53,6 @@ def test_init_with_factory(test_engine: AsyncEngine) -> None:
     factory = async_sessionmaker(test_engine, class_=AsyncSession)
     manager = DBSessionManager(factory)
     assert manager.session_factory is factory
-    assert manager._session is None  # noqa: SLF001
 
 
 def test_ensure_initialized_with_none_raises() -> None:
@@ -65,7 +64,7 @@ def test_ensure_initialized_with_none_raises() -> None:
 
 def test_ensure_initialized_with_invalid_type_raises() -> None:
     """Test ensure_initialized raises when factory is invalid type."""
-    manager = DBSessionManager("invalid")  # type: ignore[arg-type]
+    manager = DBSessionManager("invalid")
     with pytest.raises(SessionNotInitializedError):
         manager.ensure_initialized()
 
@@ -193,32 +192,49 @@ async def test_aenter_multi_mode_no_session(test_engine: AsyncEngine) -> None:
     try:
         result = await manager.__aenter__()
         assert result is manager
-        assert manager._session is None  # noqa: SLF001
+        # In multi-mode, sessions are created on-demand via get_session()
+        # current_session should remain None
+        assert current_session.get() is None
     finally:
         multi_sessions_flag.reset(token)
 
 
 async def test_aexit_single_mode_rollback_on_exception(test_engine: AsyncEngine) -> None:
-    """Test __aexit__ rolls back on exception."""
+    """Test __aexit__ rolls back on exception and cleans up session."""
     factory = async_sessionmaker(test_engine, class_=AsyncSession)
     manager = DBSessionManager(factory)
 
     await manager.__aenter__()
 
+    # Verify session is accessible
+    session = manager.get_session()
+    assert isinstance(session, AsyncSession)
+
     # Simulate exception
     await manager.__aexit__(ValueError, ValueError("test"), None)
-    assert manager._session is None  # noqa: SLF001
+
+    # Verify session is cleaned up - should raise MissingSessionError
+    with pytest.raises(MissingSessionError):
+        manager.get_session()
 
 
 async def test_aexit_single_mode_commit_on_flag(test_engine: AsyncEngine) -> None:
-    """Test __aexit__ commits when commit_flag is set."""
+    """Test __aexit__ commits when commit_flag is set and cleans up session."""
     factory = async_sessionmaker(test_engine, class_=AsyncSession)
     manager = DBSessionManager(factory)
 
     token = commit_flag.set(True)
     try:
         await manager.__aenter__()
+
+        # Verify session is accessible
+        session = manager.get_session()
+        assert isinstance(session, AsyncSession)
+
         await manager.__aexit__(None, None, None)
-        assert manager._session is None  # noqa: SLF001
+
+        # Verify session is cleaned up - should raise MissingSessionError
+        with pytest.raises(MissingSessionError):
+            manager.get_session()
     finally:
         commit_flag.reset(token)
