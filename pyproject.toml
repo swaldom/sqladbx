@@ -1,51 +1,58 @@
 [project]
 name = "sqladbx"
-version = "0.0.2"
-description = "SQLAlchemy db context"
-authors = [
-    { name="Oleksii Svichkar", email="oswops@gmail.com" }
-]
+dynamic = ["version"]
+description = "Modern async SQLAlchemy database context manager for FastAPI, Taskiq, Temporal, and more"
+authors = [{ name = "Oleksii Svichkar", email = "oswops@gmail.com" }]
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.13"
-keywords = ["async", "sqlalchemy", "sqlmodel", "fastapi", "postgresql", "db", "context", "temporal", "middleware"]
+keywords = ["async", "sqlalchemy", "fastapi", "db", "context", "temporal", "middleware"]
 classifiers = [
     "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Framework :: AsyncIO",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.13",
-    "Topic :: Database",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "sqlalchemy>=2.0",
-    "asyncpg>=0.27",
-    "starlette>=0.27"
+    "starlette>=0.13.6",
 ]
 
 [project.optional-dependencies]
+build = ["hatch>=1.16.2"]
+examples = [
+    "fastapi-cli>=0.0.16",
+    "loguru>=0.7.3",
+    "taskiq-redis>=1.2.0",
+    "redis>=7.0.1",
+]
 test = [
-    "pytest>=7.0",
+    "pytest>=9.0.2",
     "pytest-asyncio>=0.21",
     "pytest-cov>=4.0",
-    "httpx>=0.24",
-    "fastapi>=0.100",
-    "temporalio>=1.0",
-    "litestar>=2.0",
-    "sniffio>=1.3",
-    "taskiq>=0.12",
-    "sqlmodel>=0.0.8",
-    "greenlet>=3.0",
+    "aiosqlite>=0.22.0",
+    "httpx>=0.28.1",
+    "greenlet>=3.3.0",
+    "fastapi>=0.124.4",
+    "litestar>=2.19.0",
+    "sqlmodel>=0.0.27",
+    "taskiq>=0.12.1",
+    "temporalio>=1.20.0",
 ]
 
 [project.urls]
-homepage = "https://github.com/your-org/sqladbx"
-repository = "https://github.com/your-org/sqladbx"
-documentation = "https://github.com/your-org/sqladbx#readme"
-issues = "https://github.com/your-org/sqladbx/issues"
+homepage = "https://github.com/swaldom/sqladbx"
+repository = "https://github.com/swaldom/sqladbx"
+documentation = "https://github.com/swaldom/sqladbx#readme"
+issues = "https://github.com/swaldom/sqladbx/issues"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -62,16 +69,23 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["ALL"]
+ignore = ["BLE001", "ANN401", "PLR0913", "N806"]
 
-[dependency-groups]
-dev = [
-    "psycopg2-binary>=2.9.11",
-    "uvicorn>=0.38.0",
-]
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
 
 [build-system]
-requires = ["setuptools>=65.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools]
+[tool.hatch.version]
+path = "sqladbx/__init__.py"
+
+[tool.hatch.build.targets.wheel]
 packages = ["sqladbx"]
+
+[tool.hatch.build.targets.sdist]
+include = ["sqladbx/"]
