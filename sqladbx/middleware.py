@@ -16,7 +16,7 @@ from .proxy import DBProxy, db
 class SQLAlchemyMiddleware(BaseHTTPMiddleware):
     """Middleware to initialize and manage SQLAlchemy async sessions."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         app: ASGIApp,
         *,
@@ -54,9 +54,7 @@ class SQLAlchemyMiddleware(BaseHTTPMiddleware):
 
         self.db_proxy.initialize(engine, session_args=session_args)
 
-    async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """Process request with database session context.
 
         Args:

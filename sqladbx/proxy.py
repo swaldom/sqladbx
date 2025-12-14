@@ -5,12 +5,7 @@ from contextvars import Token
 from types import TracebackType
 from typing import Any
 
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from .context import commit_flag, multi_sessions_flag, session_args_override, tracked_sessions
 from .exceptions import SessionNotInitializedError
@@ -355,9 +350,7 @@ class DBProxy:
             token_commit = commit_flag.set(commit_on_exit)
             token_tracked = tracked_sessions.set(set())
             token_session_args = session_args_override.set(session_args)
-            return MultiContext(
-                self.manager, token_flag, token_commit, token_tracked, token_session_args
-            )
+            return MultiContext(self.manager, token_flag, token_commit, token_tracked, token_session_args)
 
         # Single-session mode with optional session_args
         token_commit = commit_flag.set(commit_on_exit)
