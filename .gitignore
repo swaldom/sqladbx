@@ -3,8 +3,24 @@
 
 .ruff_cache/
 .mypy_cache/
+.pytest_cache/
 
 __pycache__/
 *.py[cod]
+
+*.egg-info/
+dist/
+*.whl
+
+htmlcov/
+.coverage*
+coverage.xml
+
+.env
+.DS_Store
+
+*.db
+*.log
+*~
 
 uv.lock
