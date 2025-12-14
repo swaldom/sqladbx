@@ -4,22 +4,14 @@ from types import TracebackType
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from .context import (
-    commit_flag,
-    multi_sessions_flag,
-    session_args_override,
-    tracked_sessions,
-)
+from .context import commit_flag, current_session, multi_sessions_flag, session_args_override, tracked_sessions
 from .exceptions import MissingSessionError, SessionNotInitializedError
 
 
 class DBSessionManager:
     """Manages async session lifecycle for both shared-context and multi-session modes."""
 
-    def __init__(
-        self,
-        session_factory: async_sessionmaker[AsyncSession],
-    ) -> None:
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         """Initialize DBSessionManager.
 
         Args:
@@ -27,7 +19,6 @@ class DBSessionManager:
 
         """
         self.session_factory: async_sessionmaker[AsyncSession] = session_factory
-        self._session: AsyncSession | None = None
 
     def ensure_initialized(self) -> None:
         """Ensure session factory is initialized.
@@ -54,9 +45,12 @@ class DBSessionManager:
 
         if multi_sessions_flag.get():
             return self._create_multi_session()
-        if self._session is None:
+
+        # Use ContextVar for task-isolated session
+        session = current_session.get()
+        if session is None:
             raise MissingSessionError
-        return self._session
+        return session
 
     def _create_multi_session(self) -> AsyncSession:
         """Create a new session for multi-session mode.
@@ -92,8 +86,9 @@ class DBSessionManager:
             # multi-session mode already enabled
             return self
 
-        # single-session mode - create session with optional args from ContextVar
-        self._session = self.session_factory(**(session_args_override.get() or {}))
+        # single-session mode - store session in ContextVar for task isolation
+        session = self.session_factory(**(session_args_override.get() or {}))
+        current_session.set(session)
         return self
 
     async def __aexit__(
@@ -114,12 +109,14 @@ class DBSessionManager:
             # Multi-session mode - cleanup is handled in MultiContext.__aexit__
             return
 
-        if self._session is not None:
+        # Get session from ContextVar
+        session = current_session.get()
+        if session is not None:
             try:
                 if exc_type:
-                    await self._session.rollback()
+                    await session.rollback()
                 elif commit_flag.get():
-                    await self._session.commit()
+                    await session.commit()
             finally:
-                await self._session.close()
-                self._session = None
+                await session.close()
+                current_session.set(None)
