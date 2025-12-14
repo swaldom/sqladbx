@@ -53,7 +53,7 @@ from .exceptions import MissingSessionError, SessionNotInitializedError
 from .middleware import SQLAlchemyMiddleware, create_db_middleware
 from .proxy import DBProxy, db
 
-__version__ = "0.1.0"
+__version__ = "0.0.3"
 
 
 def create_db() -> DBProxy:
@@ -115,13 +115,13 @@ def create_middleware_and_db() -> tuple[type[SQLAlchemyMiddleware], DBProxy]:
 
 
 __all__ = [
+    "DBProxy",
     "MissingSessionError",
     "SQLAlchemyMiddleware",
     "SessionNotInitializedError",
+    "__version__",
     "create_db",
     "create_db_middleware",
     "create_middleware_and_db",
     "db",
-    "DBProxy",
-    "__version__",
 ]
