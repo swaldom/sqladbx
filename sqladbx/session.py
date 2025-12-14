@@ -1,37 +1,42 @@
 """Database session management."""
 
-import asyncio
 from types import TracebackType
-from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from .context import commit_flag, multi_sessions_flag
+from .context import (
+    commit_flag,
+    multi_sessions_flag,
+    session_args_override,
+    tracked_sessions,
+)
 from .exceptions import MissingSessionError, SessionNotInitialisedError
 
 
 class DBSessionManager:
     """Manages async session lifecycle for both shared-context and multi-session modes."""
 
-    def __init__(self, session_factory: sessionmaker[AsyncSession] | None) -> None:  # type: ignore[type-var]
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> None:
         """Initialize DBSessionManager.
 
         Args:
-            session_factory: SQLAlchemy sessionmaker instance.
+            session_factory: SQLAlchemy async_sessionmaker instance.
 
         """
-        self.SessionFactory: Any = session_factory
+        self.session_factory: async_sessionmaker[AsyncSession] = session_factory
         self._session: AsyncSession | None = None
 
     def ensure_initialized(self) -> None:
         """Ensure session factory is initialized.
 
         Raises:
-            SessionNotInitialisedError: If SessionFactory is not a sessionmaker.
+            SessionNotInitialisedError: If session_factory is not an async_sessionmaker.
 
         """
-        if not isinstance(self.SessionFactory, sessionmaker):
+        if not isinstance(self.session_factory, async_sessionmaker):
             raise SessionNotInitialisedError
 
     def get_session(self) -> AsyncSession:
@@ -57,28 +62,20 @@ class DBSessionManager:
         """Create a new session for multi-session mode.
 
         Always returns a new session per call.
-        Cleanup is guaranteed after task completion.
+        Sessions are tracked and cleaned up in __aexit__.
+        Respects session_args_override from ContextVar if set.
 
         Returns:
             AsyncSession instance.
 
         """
-        session: AsyncSession = self.SessionFactory()
+        # Create session with optional args from ContextVar
+        session = self.session_factory(**(session_args_override.get() or {}))
 
-        async def cleanup() -> None:
-            """Cleanup session after task completion."""
-            try:
-                if commit_flag.get():
-                    await session.commit()
-            except Exception:
-                await session.rollback()
-                raise
-            finally:
-                await session.close()
-
-        task = asyncio.current_task()
-        if task:
-            task.add_done_callback(lambda _: asyncio.create_task(cleanup()))
+        # Track the session for cleanup in __aexit__
+        tracked = tracked_sessions.get()
+        if tracked is not None:
+            tracked.add(session)
 
         return session
 
@@ -95,8 +92,8 @@ class DBSessionManager:
             # multi-session mode already enabled
             return self
 
-        # single-session mode
-        self._session = self.SessionFactory()
+        # single-session mode - create session with optional args from ContextVar
+        self._session = self.session_factory(**(session_args_override.get() or {}))
         return self
 
     async def __aexit__(
@@ -114,7 +111,7 @@ class DBSessionManager:
 
         """
         if multi_sessions_flag.get():
-            # multi-session cleanup handled by task callback
+            # Multi-session mode - cleanup is handled in MultiContext.__aexit__
             return
 
         if self._session is not None:
