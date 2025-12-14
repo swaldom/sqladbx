@@ -53,7 +53,7 @@ from .exceptions import MissingSessionError, SessionNotInitializedError
 from .middleware import SQLAlchemyMiddleware, create_db_middleware
 from .proxy import DBProxy, db
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 
 def create_db() -> DBProxy:
